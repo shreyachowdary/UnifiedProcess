@@ -1,0 +1,103 @@
+# Azure DevOps CI/CD Pipeline - Unified Notification Platform
+# Builds both services, runs tests, builds Docker images
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  mavenRegistry: 'https://repo.maven.apache.org/maven2'
+  javaVersion: '17'
+  dockerRegistry: '$(DOCKER_REGISTRY)'  # Set in Azure DevOps variable group
+  imageTag: '$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: MavenBuild
+        displayName: 'Maven Build & Test'
+        steps:
+          - task: Maven@3
+            displayName: 'Maven build and test'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'clean verify'
+              options: '-B'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.17'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+
+          - task: CopyFiles@2
+            displayName: 'Copy build artifacts'
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)'
+              Contents: |
+                **/target/*.jar
+                **/Dockerfile
+              TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish build artifacts'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+
+  - stage: Docker
+    displayName: 'Docker Build'
+    dependsOn: Build
+    jobs:
+      - job: BuildDockerImages
+        displayName: 'Build Docker images'
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - task: Maven@3
+            displayName: 'Package for Docker'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'package'
+              options: '-B -DskipTests'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.17'
+
+          - script: |
+              docker build -t notification-api:$(Build.BuildId) -f notification-api/Dockerfile .
+              docker build -t notification-worker:$(Build.BuildId) -f notification-worker/Dockerfile .
+            displayName: 'Build Docker images'
+            env:
+              DOCKER_BUILDKIT: 1
+
+          # Optional: Push to Azure Container Registry (set DOCKER_REGISTRY and service connection)
+          # - task: Docker@2
+          #   displayName: 'Push notification-api'
+          #   inputs:
+          #     command: 'push'
+          #     containerRegistry: '$(DOCKER_SERVICE_CONNECTION)'
+          #     repository: '$(DOCKER_REGISTRY)/notification-api'
+          #     tags: '$(Build.BuildId)'
+
+  # Optional: Deploy stage - uncomment and configure for your environment
+  # - stage: Deploy
+  #   dependsOn: Docker
+  #   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  #   jobs:
+  #     - deployment: DeployToDev
+  #       environment: 'dev'
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - task: KubernetesManifest@0
+  #                 inputs:
+  #                   action: 'deploy'
+  #                   namespace: 'notification-platform'

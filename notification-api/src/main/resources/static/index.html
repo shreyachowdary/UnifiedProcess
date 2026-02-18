@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Notification Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">◆</span>
+        <h1>Notification Platform</h1>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="send">Send Notification</button>
+        <button class="nav-btn" data-view="status">Check Status</button>
+      </nav>
+    </header>
+
+    <main class="main">
+      <!-- Dashboard View -->
+      <section id="dashboard" class="view active">
+        <h2>Metrics Overview</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Total Notifications</span>
+            <span class="metric-value" id="metric-total">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Success Rate</span>
+            <span class="metric-value" id="metric-success">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Avg Latency</span>
+            <span class="metric-value" id="metric-latency">—</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Last Hour</span>
+            <span class="metric-value" id="metric-hour">—</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="refresh-metrics">Refresh</button>
+      </section>
+
+      <!-- Send Notification View -->
+      <section id="send" class="view">
+        <h2>Send Notification</h2>
+        <form class="form" id="send-form">
+          <div class="form-row">
+            <label for="clientId">Client ID</label>
+            <input type="text" id="clientId" value="client1" required placeholder="e.g. client1">
+          </div>
+          <div class="form-row">
+            <label for="channel">Channel</label>
+            <select id="channel" required>
+              <option value="EMAIL">Email</option>
+              <option value="SMS">SMS</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="to">Recipient</label>
+            <input type="text" id="to" required placeholder="email@example.com or +1234567890">
+          </div>
+          <div class="form-row">
+            <label for="templateId">Template</label>
+            <select id="templateId">
+              <option value="welcome-email">welcome-email</option>
+              <option value="welcome-sms">welcome-sms</option>
+              <option value="otp-sms">otp-sms</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="variables">Variables (JSON)</label>
+            <input type="text" id="variables" placeholder='{"name":"John"} or {"code":"1234"}' value='{"name":"John"}'>
+          </div>
+          <div class="form-row">
+            <label for="idempotencyKey">Idempotency Key (optional)</label>
+            <input type="text" id="idempotencyKey" placeholder="Unique key for duplicate prevention">
+          </div>
+          <button type="submit" class="btn btn-primary">Send Notification</button>
+        </form>
+        <div class="result" id="send-result"></div>
+      </section>
+
+      <!-- Check Status View -->
+      <section id="status" class="view">
+        <h2>Check Notification Status</h2>
+        <div class="form-row">
+          <label for="requestId">Request ID</label>
+          <div class="input-group">
+            <input type="text" id="requestId" placeholder="Paste request ID from send response">
+            <button class="btn btn-primary" id="check-status">Check Status</button>
+          </div>
+        </div>
+        <div class="status-result" id="status-result"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span id="status-indicator">Checking connection...</span>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
